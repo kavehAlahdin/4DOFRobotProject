@@ -22,40 +22,18 @@ public static void Main(string[] args){
         string fullFileName= Path.Combine(docPath,fileName);
         int fileLineCount=CountLinesLINQ(fullFileName);
         Console.WriteLine("exists:" + File.Exists(fullFileName)+ ","+fileLineCount);
-        using(StringReader moveFile= new StringReader(fullFileName))
+        string[] data=File.ReadAllLines(fullFileName);
+        foreach (var item in data)
         {
-            
-            int counter=0;
-            string linePosition=string.Empty;
-            Console.WriteLine(linePosition);
-            string wholeText=moveFile.ReadToEnd();
-            Console.WriteLine(wholeText);
-            while(counter<fileLineCount){
-                
-                try{
-                    linePosition=moveFile.ReadLine();
-                    Console.WriteLine(linePosition);
-                    counter++;
-                    Thread.Sleep(delayTime);  
-                }
-                catch(TimeoutException){
-                    Console.WriteLine("Time out exception! ");
-                }                
-            }
-            moveFile.Close();
+            serialPort.WriteLine(item);
+            Console.WriteLine(item);
+            Thread.Sleep(delayTime);  
         }
+        
     }
     serialPort.Close();
 }
-public byte[] ReadByteArrayFromFile(string fileName)
-{
-    byte[] buff = null;
-    FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-    BinaryReader br = new BinaryReader(fs);
-    long numBytes = new FileInfo(fileName).Length;
-    buff = br.ReadBytes((int)numBytes);
-    return buff;
-}
+
 public static int CountLinesLINQ(string fileName)  
     => File.ReadLines(fileName).Count();
 
