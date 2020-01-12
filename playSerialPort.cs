@@ -7,7 +7,7 @@ public class Program{
      const int delayTime=100;
 static SerialPort serialPort;
 public static void Main(string[] args){
-    serialPort=new SerialPort("COM5",9600,Parity.None);
+    serialPort=new SerialPort("COM6",9600,Parity.None);
     serialPort.ReadTimeout = 500;
     serialPort.WriteTimeout = 500;
     serialPort.Open();
