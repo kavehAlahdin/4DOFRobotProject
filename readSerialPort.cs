@@ -25,18 +25,18 @@ public class PortChat
             fileName+=randomNumber.Next(1,1000).ToString();
         string docPath =
           Environment.CurrentDirectory;
-        _streamWriter= new StreamWriter(Path.Combine(docPath,fileName)+".txt");
+        _streamWriter= new StreamWriter(Path.Combine(docPath,fileName));
 
         // Create a new SerialPort object with default settings.
         _serialPort = new SerialPort();
 
         // Allow the user to set the appropriate properties.
-        _serialPort.PortName = SetPortName(_serialPort.PortName);
-        _serialPort.BaudRate = SetPortBaudRate(_serialPort.BaudRate);
-        _serialPort.Parity = SetPortParity(_serialPort.Parity);
-        _serialPort.DataBits = SetPortDataBits(_serialPort.DataBits);
-        _serialPort.StopBits = SetPortStopBits(_serialPort.StopBits);
-        _serialPort.Handshake = SetPortHandshake(_serialPort.Handshake);
+        _serialPort.PortName ="COM7";// SetPortName(_serialPort.PortName);
+        _serialPort.BaudRate = 9600; //SetPortBaudRate(_serialPort.BaudRate);
+        _serialPort.Parity = Parity.None;// SetPortParity(_serialPort.Parity);
+        //_serialPort.DataBits = SetPortDataBits(_serialPort.DataBits);
+        //_serialPort.StopBits = SetPortStopBits(_serialPort.StopBits);
+        //_serialPort.Handshake = SetPortHandshake(_serialPort.Handshake);
 
         // Set the read/write timeouts
         _serialPort.ReadTimeout = 500;
@@ -61,8 +61,8 @@ public class PortChat
             }
             else
             {
-                _serialPort.WriteLine(
-                    String.Format("<{0}>: {1}", name, message));
+                //_serialPort.WriteLine(
+                  //  String.Format("<{0}>: {1}", name, message));
             }
         }
         readThread.Join();
@@ -77,8 +77,10 @@ public class PortChat
             try
             {
                 string message = _serialPort.ReadLine();
-                Console.WriteLine(message);
-                _streamWriter.WriteLine(message);
+                if ((message!=null)||(message.Length!=0)){
+                    Console.WriteLine(message);
+                    _streamWriter.WriteLine(message);
+                }
             }
             catch (TimeoutException) { }
         }
@@ -89,7 +91,6 @@ public class PortChat
     public static string SetPortName(string defaultPortName)
     {
         string portName;
-
         Console.WriteLine("Available Ports:");
         foreach (string s in SerialPort.GetPortNames())
         {

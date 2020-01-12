@@ -1,42 +1,48 @@
 using System;
+using System.Threading;
 using System.IO;
 using System.IO.Ports;
+using System.Linq;
 public class Program{
+     const int delayTime=100;
 static SerialPort serialPort;
 public static void Main(string[] args){
     serialPort=new SerialPort("COM5",9600,Parity.None);
     serialPort.ReadTimeout = 500;
     serialPort.WriteTimeout = 500;
     serialPort.Open();
-
     if ((args==null)||(args.Length==0))
     {
         Console.WriteLine("No Files are loaded!");
         return;
     }
     //Loop through al files
-                    Console.WriteLine("Hi1");
     string docPath =Environment.CurrentDirectory;
     foreach(string fileName in args){
         string fullFileName= Path.Combine(docPath,fileName);
-        using(StringReader moveFile= new StringReader( fullFileName))
+        int fileLineCount=CountLinesLINQ(fullFileName);
+        Console.WriteLine("exists:" + File.Exists(fullFileName)+ ","+fileLineCount);
+        using(StringReader moveFile= new StringReader(fullFileName))
         {
+            
             int counter=0;
-            Console.WriteLine("Hi2");
             string linePosition=string.Empty;
-            while(true){
+            Console.WriteLine(linePosition);
+            string wholeText=moveFile.ReadToEnd();
+            Console.WriteLine(wholeText);
+            while(counter<fileLineCount){
+                
                 try{
                     linePosition=moveFile.ReadLine();
-                    if (linePosition==null) break;
-                    //serialPort.WriteLine(linePosition);
-                    Console.WriteLine(linePosition.ToString());
-                    //Console.WriteLine("Hi3");
+                    Console.WriteLine(linePosition);
                     counter++;
+                    Thread.Sleep(delayTime);  
                 }
                 catch(TimeoutException){
                     Console.WriteLine("Time out exception! ");
                 }                
             }
+            moveFile.Close();
         }
     }
     serialPort.Close();
@@ -50,5 +56,7 @@ public byte[] ReadByteArrayFromFile(string fileName)
     buff = br.ReadBytes((int)numBytes);
     return buff;
 }
+public static int CountLinesLINQ(string fileName)  
+    => File.ReadLines(fileName).Count();
 
 }
