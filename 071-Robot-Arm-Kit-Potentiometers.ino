@@ -1,7 +1,8 @@
-//add servo library
+ //add servo library
 #include <Servo.h>
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
 //define our servos
 Servo servo1;
 Servo servo2;
@@ -19,6 +20,11 @@ int valPot1;
 int valPot2;
 int valPot3;
 int valPot4;
+String separator=", ";
+char* message="";
+char delimiter[]=",\n";
+
+int valueList[]={0,0,0,0};
 /*set the state: 
   1-use only potentiometer values:potentioRead
   2-send the servo state to serial port:SerialSend
@@ -26,6 +32,7 @@ int valPot4;
 */
 enum RobotStateEnum{Potentiometer,SerialSend,SerialRead};
 RobotStateEnum RobotState=Potentiometer;
+//set the initial settings
 void setup()
 {
   //attaches our servos on pins PWM 11-10-9-6 to the servos
@@ -36,46 +43,22 @@ void setup()
   Serial.begin(9600);
   Serial.println("Serial port connected!");
 }
-String separator=", ";
-char* message="";
-char delimiter[]=",\n";
-char **pch;
-int valueList[]={0,0,0,0};
+//Repeating part of the code
 void loop()
 {
-  //reads the value of potentiometers (value between 0 and 1023)
-  valPot1 = analogRead(pot1);
-  valPot1 = map (valPot1, 0, 1023, 0, 180);   //scale it to use it with the servo (value between 0 and 180)
-  
-  valPot2 = analogRead(pot2);
-  valPot2 = map (valPot2, 0, 1023, 0, 180);
-
-  valPot3 = analogRead(pot3);
-  valPot3 = map (valPot3, 0, 1023, 0, 180);
-
-  valPot4 = analogRead(pot4);
-  valPot4 = map (valPot4, 0, 1023, 0, 180);
-  if(Serial.available()){
-    message=Serial.read();    
-  }
-  
-  *pch=strtok(message, delimiter);
-
-  while (*pch != NULL)
+  readSerialPortSetState();
+  switch (RobotState)
   {
-    printf ("%s\n",*pch);
-    *pch = strtok (NULL, delimiter);
-    *pch++;
-  }
-  
-  for (int i=0;i<4;i++)
-  {
-      valueList[i]=atoi(pch[i]);
-  }
-  valPot1=valueList[0];
-  valPot2=valueList[1];
-  valPot3=valueList[2];
-  valPot4=valueList[3];
+  case Potentiometer:
+    usePotentiometerValues();
+    break;
+  case SerialSend:
+    sendDataToSerialPort();
+    break;
+  case SerialRead:
+    useSerialportValues();
+    break;
+    }  
   //
   servo1.write(valPot1);                      //set the servo position according to the scaled value
   delay(25);
@@ -85,6 +68,96 @@ void loop()
   delay(25);
   servo4.write(valPot4);
   delay(5);
-  Serial.println(valPot1 + separator+valPot2+separator+valPot3+separator+valPot4);
+  Serial.flush();
+}
+
+// Sets the value of the servos according to potentionmeter values
+void usePotentiometerValues(){
+  //reads the value of potentiometers (value between 0 and 1023)
+  valPot1 = analogRead(pot1);
+  valPot1 = map (valPot1, 0, 1023, 0, 180);   //scale it to use it with the servo (value between 0 and 180)
+  valPot2 = analogRead(pot2);
+  valPot2 = map (valPot2, 0, 1023, 0, 180);
+  valPot3 = analogRead(pot3);
+  valPot3 = map (valPot3, 0, 1023, 0, 180);
+  valPot4 = analogRead(pot4);
+  valPot4 = map (valPot4, 0, 1023, 0, 180);
+}
+
+//Reads the data from the serial port, process them and set the servo position values based on them
+void readSerialPortSetState(){
+  if(Serial.available()){
+
+    message=Serial.read();   
+    if (message==NULL)
+    {
+      return;
+    }
+    if(strcmp(message,'1')==0){
+      RobotState=Potentiometer;
+      Serial.write("Potentiometer\n");
+    }
+    else if(strcmp(message,'2')==0)
+      {
+        RobotState=SerialSend;
+        Serial.write("SerialSend\n");
+      }
+    else if(strcmp(message,'3')==0)
+      {
+        RobotState=SerialRead;
+        Serial.write("SerialRead\n");
+      }
+  }
+}
+
+// use serial port values to set servo motors
+void useSerialportValues(){
+  char* token;
+  //get the first token
+  int index = 0;
+  token=strtok(message, delimiter);
+  bool error;
+  while (token != NULL)
+  {
+    error=false;
+    if(is_number(token)){
+      valueList[index]=atoi(token);
+      Serial.write(valueList[index]);
+      index++;
+    }
+    else
+    {
+      error=true;
+      break;
+    }
+    token = strtok (NULL, delimiter);
+  }
+  if (error) 
+  {
+    Serial.write("error");
+    return;
+  }
   
+  valPot1=valueList[0];
+  valPot2=valueList[1];
+  valPot3=valueList[2];
+  valPot4=valueList[3];
+}
+
+// Reads the servo position and send them to the serial port
+void sendDataToSerialPort(){
+  usePotentiometerValues();
+  Serial.println(valPot1 + separator+valPot2+separator+valPot3+separator+valPot4);
+}
+bool is_number(const char* str)
+{
+  bool result=true;
+  for(char* it = str; *it; ++it) {
+    if(!isdigit(*it)) 
+    {
+      result=false;
+      break;
+    }
+  }
+  return result;
 }
