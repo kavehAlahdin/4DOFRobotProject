@@ -21,7 +21,7 @@ int valPot2;
 int valPot3;
 int valPot4;
 String separator=", ";
-char* message="";
+String message="";
 char delimiter[]=",\n";
 
 int valueList[]={0,0,0,0};
@@ -89,20 +89,20 @@ void readSerialPortSetState(){
   if(Serial.available()){
 
     message=Serial.read();   
-    if (message==NULL)
+    if ((message==NULL))
     {
       return;
     }
-    if(strcmp(message,'1')==0){
+    if(message.equals("1\n")==0){
       RobotState=Potentiometer;
       Serial.write("Potentiometer\n");
     }
-    else if(strcmp(message,'2')==0)
+    else if(message.equals("2\n")==0)
       {
         RobotState=SerialSend;
         Serial.write("SerialSend\n");
       }
-    else if(strcmp(message,'3')==0)
+    else if(message.equals("3\n")==0)
       {
         RobotState=SerialRead;
         Serial.write("SerialRead\n");
@@ -115,7 +115,10 @@ void useSerialportValues(){
   char* token;
   //get the first token
   int index = 0;
-  token=strtok(message, delimiter);
+  int messageLength=message.length();
+  char charBuf[messageLength + 1];
+  message.toCharArray(charBuf,messageLength);
+  token=strtok(charBuf, delimiter);
   bool error;
   while (token != NULL)
   {
@@ -134,7 +137,7 @@ void useSerialportValues(){
   }
   if (error) 
   {
-    Serial.write("error");
+    //Serial.write("error");
     return;
   }
   
