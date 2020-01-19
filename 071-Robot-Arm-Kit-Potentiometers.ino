@@ -19,7 +19,13 @@ int valPot1;
 int valPot2;
 int valPot3;
 int valPot4;
-
+/*set the state: 
+  1-use only potentiometer values:potentioRead
+  2-send the servo state to serial port:SerialSend
+  3-read data from Serial port :SerialRead
+*/
+enum RobotStateEnum{Potentiometer,SerialSend,SerialRead};
+RobotStateEnum RobotState=Potentiometer;
 void setup()
 {
   //attaches our servos on pins PWM 11-10-9-6 to the servos
@@ -61,6 +67,7 @@ void loop()
     *pch = strtok (NULL, delimiter);
     *pch++;
   }
+  
   for (int i=0;i<4;i++)
   {
       valueList[i]=atoi(pch[i]);
