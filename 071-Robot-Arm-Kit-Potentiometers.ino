@@ -21,7 +21,7 @@ int valPot2;
 int valPot3;
 int valPot4;
 String separator=", ";
-String message="";
+String serialResponse="";
 char delimiter[]=",\n";
 
 int valueList[]={0,0,0,0};
@@ -47,6 +47,7 @@ void setup()
 void loop()
 {
   readSerialPortSetState();
+  useSerialportValues() ;
   switch (RobotState)
   {
   case Potentiometer:
@@ -86,56 +87,41 @@ void usePotentiometerValues(){
 
 //Reads the data from the serial port, process them and set the servo position values based on them
 void readSerialPortSetState(){
-  if(Serial.available()){
-
-    message=Serial.read();
-    message ="110,120,40,30";   
-    if ((message==NULL)) return;
-    if(message.equals("1\n")==0){
+ if ( Serial.available()) {
+    serialResponse = Serial.readStringUntil('\r\n');
+    if ((serialResponse==NULL)||(serialResponse.length()>1)) return;
+    if(serialResponse=="1")
       RobotState=Potentiometer;
-      Serial.write("Potentiometer\n");
-    }
-    else if(message.equals("2\n")==0)
-      {
+    else if(serialResponse=="2")
         RobotState=SerialSend;
-        Serial.write("SerialSend\n");
-      }
-    else if(message.equals("3\n")==0)
-      {
+    else if(serialResponse=="3")
         RobotState=SerialRead;
-        Serial.write("SerialRead\n");
-      }
-  }
+   }
 }
-
+bool error=false;
 // use serial port values to set servo motors
 void useSerialportValues(){
-  char* token;
-  //get the first token
-  int index = 0;
-  int messageLength=message.length();
-  char charBuf[messageLength + 1];
-  message.toCharArray(charBuf,messageLength);
-  token=strtok(charBuf, delimiter);
-  bool error;
-  while (token != NULL)
-  {
-    error=false;
-    if(is_number(token)){
-      valueList[index]=atoi(token);
-      Serial.write(valueList[index]);
-      index++;
-    }
-    else
+   char buf[sizeof(serialResponse)];
+     int index = 0;
+    serialResponse.toCharArray(buf, sizeof(buf));
+    char *p = buf;
+    char *str;
+    while ((str = strtok_r(p, delimiter, &p)) != NULL)
     {
-      error=true;
-      break;
-    }
-    token = strtok (NULL, delimiter);
+      if(is_number(str)){
+        valueList[index]=atoi(str);
+        Serial.println(valueList[index]);
+        index++;
+      }
+      else
+      {
+        error=true;
+        break;
+      }
+      if(index>3){error =true;break;}
   }
   if (error) 
   {
-    //Serial.write("error");
     return;
   }
   
