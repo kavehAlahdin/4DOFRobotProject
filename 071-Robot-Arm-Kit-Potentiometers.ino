@@ -47,8 +47,7 @@ void setup()
 void loop()
 {
   readSerialPortSetState();
-  useSerialportValues() ;
-  switch (RobotState)
+    switch (RobotState)
   {
   case Potentiometer:
     usePotentiometerValues();
@@ -57,6 +56,7 @@ void loop()
     sendDataToSerialPort();
     break;
   case SerialRead:
+    useSerialportValues();
     useSerialportValues();
     break;
     }  
@@ -69,6 +69,7 @@ void loop()
   delay(25);
   servo4.write(valPot4);
   delay(5);
+  serialResponse="";
   Serial.flush();
 }
 
@@ -87,7 +88,7 @@ void usePotentiometerValues(){
 
 //Reads the data from the serial port, process them and set the servo position values based on them
 void readSerialPortSetState(){
- if ( Serial.available()&&(Serial.peek())) {
+ if ( Serial.available()) {
     serialResponse = Serial.readStringUntil('\r\n');
     if ((serialResponse==NULL)||(serialResponse.length()>1)) return;
     if(serialResponse=="1")
@@ -96,22 +97,27 @@ void readSerialPortSetState(){
         RobotState=SerialSend;
     else if(serialResponse=="3")
         RobotState=SerialRead;
+    //Serial.println(RobotState);
    }
+   serialResponse="";
 }
 bool error=false;
+
 // use serial port values to set servo motors
 void useSerialportValues(){
-   char buf[sizeof(serialResponse)];
-     int index = 0;
-     if (serialResponse.length()==NULL) return;
+    if (serialResponse.length()==0||serialResponse.length()<7) return;
+    char buf[serialResponse.length()+1];
+    int index = 0;
+    //Serial.println(serialResponse.length());
     serialResponse.toCharArray(buf, sizeof(buf));
     char *p = buf;
     char *str;
     while ((str = strtok_r(p, delimiter, &p)) != NULL)
     {
-      Serial.print("hi");
       if(is_number(str)){
         valueList[index]=atoi(str);
+        Serial.print("---");
+        Serial.print(valueList[index]);
         index++;
       }
       else
@@ -122,15 +128,12 @@ void useSerialportValues(){
       if(index>3){error =true;break;}
   }
   if (error) 
-  {
     return;
-  }
-  
   valPot1=valueList[0];
   valPot2=valueList[1];
   valPot3=valueList[2];
   valPot4=valueList[3];
-  
+  /*
   Serial.println("----");
   for(int i=0;i<=3;i++){
     
@@ -139,6 +142,7 @@ void useSerialportValues(){
     
   }
   Serial.println("----");
+  */
   serialResponse="";
 }
 
