@@ -22,7 +22,7 @@ int valPot3;
 int valPot4;
 String separator=", ";
 String serialResponse="";
-char delimiter[]=",\n";
+char delimiter[]=",\n ";
 
 int valueList[]={0,0,0,0};
 /*set the state: 
@@ -30,7 +30,7 @@ int valueList[]={0,0,0,0};
   2-send the servo state to serial port:SerialSend
   3-read data from Serial port :SerialRead
 */
-enum RobotStateEnum{Potentiometer,SerialSend,SerialRead};
+enum RobotStateEnum{Potentiometer=1,SerialSend=2,SerialRead=3};
 RobotStateEnum RobotState=Potentiometer;
 //set the initial settings
 void setup()
@@ -51,28 +51,33 @@ void loop()
   {
   case Potentiometer:
     usePotentiometerValues();
+    setServoMotos();
     break;
   case SerialSend:
     sendDataToSerialPort();
     break;
   case SerialRead:
     useSerialportValues();
-    useSerialportValues();
+    setServoMotos();
     break;
-    }  
+    } 
+     
   //
-  servo1.write(valPot1);                      //set the servo position according to the scaled value
+  //Serial.println((is_number("2000"))?"Dorost":"Ghalat");
+  Serial.flush();
+}
+void setServoMotos(){
+  servo1.write(valPot1);//set the servo position according to the scaled value
   delay(25);
   servo2.write(valPot2);
   delay(25);
   servo3.write(valPot3);
   delay(25);
   servo4.write(valPot4);
-  delay(5);
+  delay(25);
   serialResponse="";
-  Serial.flush();
-}
-
+  //Serial.flush();
+  }
 // Sets the value of the servos according to potentionmeter values
 void usePotentiometerValues(){
   //reads the value of potentiometers (value between 0 and 1023)
@@ -89,7 +94,7 @@ void usePotentiometerValues(){
 //Reads the data from the serial port, process them and set the servo position values based on them
 void readSerialPortSetState(){
  if ( Serial.available()) {
-    serialResponse = Serial.readStringUntil('\r\n');
+    serialResponse = String(Serial.readStringUntil('\r\n'));
     if ((serialResponse==NULL)||(serialResponse.length()>1)) return;
     if(serialResponse=="1")
       RobotState=Potentiometer;
@@ -97,7 +102,7 @@ void readSerialPortSetState(){
         RobotState=SerialSend;
     else if(serialResponse=="3")
         RobotState=SerialRead;
-    //Serial.println(RobotState);
+    Serial.println(RobotState);
    }
    serialResponse="";
 }
@@ -108,38 +113,43 @@ void useSerialportValues(){
     if (serialResponse.length()==0||serialResponse.length()<7) return;
     char buf[serialResponse.length()+1];
     int index = 0;
-    //Serial.println(serialResponse.length());
+    //Serial.println(serialResponse);
     serialResponse.toCharArray(buf, sizeof(buf));
     char *p = buf;
     char *str;
-    while ((str = strtok_r(p, delimiter, &p)) != NULL)
+    error=false;
+    while ((str = strtok_r(p, delimiter, &p)) != NULL&&index<4)
     {
+      //Serial.println(strcat(str, " isNumber: "+(is_number(str))?" true":" false"));
       if(is_number(str)){
         valueList[index]=atoi(str);
-        Serial.print("---");
-        Serial.print(valueList[index]);
-        index++;
+        //Serial.println("parsed");     
+        Serial.println(valueList[index]);
+        index++;     
       }
       else
       {
         error=true;
+        //Serial.println("43");
         break;
-      }
-      if(index>3){error =true;break;}
-  }
-  if (error) 
-    return;
-  valPot1=valueList[0];
-  valPot2=valueList[1];
-  valPot3=valueList[2];
-  valPot4=valueList[3];
-  /*
-  Serial.println("----");
-  for(int i=0;i<=3;i++){
+      }         
+    }
     
+    if(index!=4){
+      error =true;
+      //Serial.println("E3,"+index);
+    }
+    if (error) return;
+    
+    valPot1=valueList[0];
+    valPot2=valueList[1];
+    valPot3=valueList[2];
+    valPot4=valueList[3];
+  
+  /*Serial.println("----");
+  for(int i=0;i<=3;i++){ 
     Serial.print(valueList[i]);
     Serial.print(",");
-    
   }
   Serial.println("----");
   */
@@ -154,9 +164,11 @@ void sendDataToSerialPort(){
 bool is_number(const char* str)
 {
   bool result=true;
-  for(char* it = str; *it; ++it) {
-    if(!isdigit(*it)) 
+  for(size_t i=0; i<strlen(str);i++) {
+    
+    if(!isdigit(str[i])) 
     {
+      //Serial.println(str[i]+ "is not digit");
       result=false;
       break;
     }
