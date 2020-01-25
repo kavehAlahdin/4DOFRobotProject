@@ -87,7 +87,7 @@ void usePotentiometerValues(){
 
 //Reads the data from the serial port, process them and set the servo position values based on them
 void readSerialPortSetState(){
- if ( Serial.available()) {
+ if ( Serial.available()&&(Serial.peek())) {
     serialResponse = Serial.readStringUntil('\r\n');
     if ((serialResponse==NULL)||(serialResponse.length()>1)) return;
     if(serialResponse=="1")
@@ -103,14 +103,15 @@ bool error=false;
 void useSerialportValues(){
    char buf[sizeof(serialResponse)];
      int index = 0;
+     if (serialResponse.length()==NULL) return;
     serialResponse.toCharArray(buf, sizeof(buf));
     char *p = buf;
     char *str;
     while ((str = strtok_r(p, delimiter, &p)) != NULL)
     {
+      Serial.print("hi");
       if(is_number(str)){
         valueList[index]=atoi(str);
-        Serial.println(valueList[index]);
         index++;
       }
       else
@@ -129,6 +130,16 @@ void useSerialportValues(){
   valPot2=valueList[1];
   valPot3=valueList[2];
   valPot4=valueList[3];
+  
+  Serial.println("----");
+  for(int i=0;i<=3;i++){
+    
+    Serial.print(valueList[i]);
+    Serial.print(",");
+    
+  }
+  Serial.println("----");
+  serialResponse="";
 }
 
 // Reads the servo position and send them to the serial port
