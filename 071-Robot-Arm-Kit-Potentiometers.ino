@@ -88,11 +88,9 @@ void usePotentiometerValues(){
 void readSerialPortSetState(){
   if(Serial.available()){
 
-    message=Serial.read();   
-    if ((message==NULL))
-    {
-      return;
-    }
+    message=Serial.read();
+    message ="110,120,40,30";   
+    if ((message==NULL)) return;
     if(message.equals("1\n")==0){
       RobotState=Potentiometer;
       Serial.write("Potentiometer\n");
