@@ -22,47 +22,59 @@ public class PortChat
         if((args!=null)||(args.Length!=0))
             fileName=args[0];
         if(File.Exists(fileName))
-            fileName+=randomNumber.Next(1,1000).ToString();
+            {
+                Console.Write("File exist! overwrite?(Y/N)");
+                ConsoleKeyInfo enteredKey= Console.ReadKey();
+                if(enteredKey.Key==ConsoleKey.N)
+                    return;                
+            }
         string docPath =
           Environment.CurrentDirectory;
-        _streamWriter= new StreamWriter(Path.Combine(docPath,fileName));
+        _streamWriter= new StreamWriter(Path.Combine(docPath,fileName),false);
 
         // Create a new SerialPort object with default settings.
         _serialPort = new SerialPort();
 
         // Allow the user to set the appropriate properties.
-        _serialPort.PortName ="COM7";// SetPortName(_serialPort.PortName);
+        _serialPort.PortName =SetPortName(_serialPort.PortName);
         _serialPort.BaudRate = 9600; //SetPortBaudRate(_serialPort.BaudRate);
         _serialPort.Parity = Parity.None;// SetPortParity(_serialPort.Parity);
-        //_serialPort.DataBits = SetPortDataBits(_serialPort.DataBits);
-        //_serialPort.StopBits = SetPortStopBits(_serialPort.StopBits);
-        //_serialPort.Handshake = SetPortHandshake(_serialPort.Handshake);
+        _serialPort.DataBits = SetPortDataBits(_serialPort.DataBits);
+        _serialPort.StopBits = SetPortStopBits(_serialPort.StopBits);
+        _serialPort.Handshake = SetPortHandshake(_serialPort.Handshake);
 
         // Set the read/write timeouts
-        _serialPort.ReadTimeout = 500;
-        _serialPort.WriteTimeout = 500;
-
-        _serialPort.Open();
+        //_serialPort.ReadTimeout = 500;
+        //_serialPort.WriteTimeout = 500;
+        try
+        {
+            _serialPort.Open();
+            readThread.Start();
+        }
+        catch (System.Exception)
+        {
+            readThread.Join();
+            _serialPort.Close();    
+            
+        }
         _continue = true;
-        readThread.Start();
 
         Console.Write("Name: ");
         name = Console.ReadLine();
 
-        Console.WriteLine("Type QUIT to exit");
-
+        Console.WriteLine("Type q to quit");
         while (_continue)
         {
-            message = Console.ReadLine();
+             message = Console.ReadLine();
 
-            if (stringComparer.Equals("quit", message))
+            if (stringComparer.Equals("q", message))
             {
                 _continue = false;
             }
             else
             {
-                //_serialPort.WriteLine(
-                  //  String.Format("<{0}>: {1}", name, message));
+                _serialPort.WriteLine(
+                  String.Format("<{0}>: {1}", name, message));
             }
         }
         readThread.Join();
@@ -82,7 +94,11 @@ public class PortChat
                     _streamWriter.WriteLine(message);
                 }
             }
-            catch (TimeoutException) { }
+            catch (TimeoutException) { 
+                Console.WriteLine("Error!");
+                _streamWriter.Close();
+                _streamWriter.Dispose();
+            }
         }
         _streamWriter.Close();
     }

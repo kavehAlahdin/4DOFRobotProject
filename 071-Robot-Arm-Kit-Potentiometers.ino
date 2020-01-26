@@ -8,6 +8,7 @@ Servo servo1;
 Servo servo2;
 Servo servo3;
 Servo servo4;
+int delayTime=25;
 
 //define our potentiometers
 int pot1 = A0;
@@ -30,8 +31,8 @@ int valueList[]={0,0,0,0};
   2-send the servo state to serial port:SerialSend
   3-read data from Serial port :SerialRead
 */
-enum RobotStateEnum{Potentiometer=1,SerialSend=2,SerialRead=3};
-RobotStateEnum RobotState=Potentiometer;
+enum RobotStateEnum{Potentiometer=1,SerialSend=2,SerialRead=3,RelativeTranslation=4};
+RobotStateEnum RobotState=SerialRead;
 //set the initial settings
 void setup()
 {
@@ -51,30 +52,33 @@ void loop()
   {
   case Potentiometer:
     usePotentiometerValues();
-    setServoMotos();
     break;
   case SerialSend:
+    usePotentiometerValues();
     sendDataToSerialPort();
     break;
   case SerialRead:
     useSerialportValues();
-    setServoMotos();
     break;
+  case RelativeTranslation:
+    useSerialportValues();
+    relativeTranslate();  
+  break;
     } 
-     
+   setServoMotos();
   //
   //Serial.println((is_number("2000"))?"Dorost":"Ghalat");
   Serial.flush();
 }
 void setServoMotos(){
   servo1.write(valPot1);//set the servo position according to the scaled value
-  delay(25);
+  delay(delayTime);
   servo2.write(valPot2);
-  delay(25);
+  delay(delayTime);
   servo3.write(valPot3);
-  delay(25);
+  delay(delayTime);
   servo4.write(valPot4);
-  delay(25);
+  delay(delayTime);
   serialResponse="";
   //Serial.flush();
   }
@@ -120,27 +124,21 @@ void useSerialportValues(){
     error=false;
     while ((str = strtok_r(p, delimiter, &p)) != NULL&&index<4)
     {
-      //Serial.println(strcat(str, " isNumber: "+(is_number(str))?" true":" false"));
       if(is_number(str)){
-        valueList[index]=atoi(str);
-        //Serial.println("parsed");     
-        Serial.println(valueList[index]);
-        index++;     
+      valueList[index]=atoi(str);
+      Serial.println(valueList[index]);
+      index++;     
       }
       else
       {
         error=true;
-        //Serial.println("43");
         break;
       }         
     }
     
-    if(index!=4){
-      error =true;
-      //Serial.println("E3,"+index);
-    }
+    if(index!=4){ error =true;}
     if (error) return;
-    
+ 
     valPot1=valueList[0];
     valPot2=valueList[1];
     valPot3=valueList[2];
@@ -160,7 +158,14 @@ void useSerialportValues(){
 void sendDataToSerialPort(){
   usePotentiometerValues();
   Serial.println(valPot1 + separator+valPot2+separator+valPot3+separator+valPot4);
+  delay(delayTime*4);
 }
+void relativeTranslate(){
+  valPot1+=servo1.read();
+  valPot2+=servo2.read();
+  valPot3+=servo3.read();
+  valPot4+=servo4.read();
+  }
 bool is_number(const char* str)
 {
   bool result=true;
