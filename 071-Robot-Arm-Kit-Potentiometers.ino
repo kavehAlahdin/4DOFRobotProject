@@ -106,6 +106,10 @@ void readSerialPortSetState(){
         RobotState=SerialSend;
     else if(serialResponse=="3")
         RobotState=SerialRead;
+    else if (serialResponse=="4")
+      RobotState=RelativeTranslation;
+    else 
+      return;  
     Serial.println(RobotState);
    }
    serialResponse="";
