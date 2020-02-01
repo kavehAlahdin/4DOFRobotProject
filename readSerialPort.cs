@@ -30,7 +30,7 @@ public class PortChat
             }
         string docPath =
           Environment.CurrentDirectory;
-        _streamWriter= new StreamWriter(Path.Combine(docPath,fileName),false);
+        _   streamWriter= new StreamWriter(Path.Combine(docPath,fileName),false);
 
         // Create a new SerialPort object with default settings.
         _serialPort = new SerialPort();
