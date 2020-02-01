@@ -23,7 +23,7 @@ static  Dictionary<MenuState,String> MenuDictionary=new  Dictionary<MenuState,St
             (2) Send Command to robot
                 (b) Back    (x) Exit"},
     {MenuState.InversKinematic,@"(To be implemented)
-            (b) Back (x)"},
+            (b) Back (x) Exit"},
     {MenuState.Robotstate,@"Robot state:
             (1) Control per potentionmeters
             (2) Control perPotentiometer + serial port output of the servo positions
@@ -45,12 +45,34 @@ static MenuState currentMenu=MenuState.Firstmenu;
         for (int i = 0; i < 100; i++)
             Console.Write("-");
         Console.WriteLine();
-        String menuMessage=MenuDictionary[currentMenu];
+        String menuMessage;
         while(!endProgram){
+            menuMessage=MenuDictionary[currentMenu];
             Console.WriteLine(menuMessage);
             ConsoleKeyInfo inputValue= Console.ReadKey();
-            manageFirstmenu(inputValue);
-
+            Console.WriteLine();
+            switch (currentMenu)
+            {
+                case MenuState.Firstmenu:
+                    manageFirstmenu( inputValue);
+                    break;
+                case MenuState.Robotstate:
+                    manageRobotStatemenu( inputValue);
+                    break;
+                case MenuState.Kinematic:
+                    manageKinematicMenu( inputValue);
+                    break;
+                case MenuState.InversKinematic:
+                    manageInverseKinematicMenu( inputValue);
+                    break;
+                case MenuState.KinematicSaveCommands:
+                    manageKinematicSaveCommandsmenu( inputValue);
+                    break;
+                case MenuState.KinematicSendCommands:
+                    manageKinematicSendCommandsMenu( inputValue);
+                    break;
+                
+            }
             Thread.Sleep(100);
         }
     }
@@ -58,15 +80,138 @@ static MenuState currentMenu=MenuState.Firstmenu;
     public static void manageFirstmenu(ConsoleKeyInfo inputValue){
         if(inputValue.Key==ConsoleKey.D1) setupSerialPOrt(); 
         else if(inputValue.Key==ConsoleKey.D2)
-            if(_serialPort.IsOpen) _serialPort.Close();
+        {
+            if(_serialPort.IsOpen) {
+                _serialPort.Close();
+                Console.WriteLine("serial port is closed");
+            }
+            else
+            {
+                Console.WriteLine("Serial port is already closed!");
+            }
+        }
         else if(inputValue.Key==ConsoleKey.D3)
-            if(!_serialPort.IsOpen())
+            if(_serialPort==null ||!_serialPort.IsOpen)
                 Console.WriteLine("The serial port is not open!");
             else
-                
+            {
+                Console.WriteLine("Change to Robot state menu");
+                currentMenu=MenuState.Robotstate;
+            }
+        else if (inputValue.Key==ConsoleKey.D4)
+        {
+            Console.WriteLine("Change to kinematic menu ");
+            currentMenu=MenuState.Kinematic;
+        }
+        else if(inputValue.Key==ConsoleKey.D5)
+        {
+            currentMenu=MenuState.InversKinematic;
+            Console.WriteLine("Change to Inverse kinematic menu");
+        }
         if (inputValue.Key==ConsoleKey.X) 
+            {
                 endProgram=true; 
+                Console.WriteLine("Exiting the program");
+            }
     }
+    
+    public static void manageKinematicMenu(ConsoleKeyInfo inputValue){
+
+        if (inputValue.Key==ConsoleKey.D1)
+            currentMenu=MenuState.KinematicSaveCommands;
+        else if(inputValue.Key==ConsoleKey.D2)
+            currentMenu=MenuState.KinematicSendCommands;
+        else if(inputValue.Key==ConsoleKey.B)
+            currentMenu=MenuState.Firstmenu;
+        else if(inputValue.Key==ConsoleKey.X)
+        {
+            endProgram=true; 
+            Console.WriteLine("Exiting the program");
+        }
+    }
+    public static void manageKinematicSendCommandsMenu(ConsoleKeyInfo inputValue){
+        if(_serialPort==null ||_serialPort.IsOpen){
+            Console.WriteLine("Serial port is not available!");
+            currentMenu=MenuState.Kinematic;
+            return;
+        }
+        if(inputValue.Key ==ConsoleKey.D1){
+            //send one command
+            
+        }
+        else if (inputValue.Key==ConsoleKey.D2)
+        {
+            //send multiple from a file
+            
+        }
+        if (inputValue.Key==ConsoleKey.S)
+        {
+            //stop the file playing
+        }
+         if(inputValue.Key==ConsoleKey.B)
+            currentMenu=MenuState.Kinematic;
+        else if(inputValue.Key==ConsoleKey.X)
+        {
+            endProgram=true; 
+            Console.WriteLine("Exiting the program");
+        }
+
+    }
+    public static void manageKinematicSaveCommandsmenu(ConsoleKeyInfo inputValue){
+        if(inputValue.Key==ConsoleKey.D1)
+        {
+
+        }
+        else if(inputValue.Key==ConsoleKey.D2){
+
+        }
+        if (inputValue.Key==ConsoleKey.S)
+        {
+            //stop the file playing
+        }
+         if(inputValue.Key==ConsoleKey.B)
+            currentMenu=MenuState.Kinematic;
+        else if(inputValue.Key==ConsoleKey.X)
+        {
+            endProgram=true; 
+            Console.WriteLine("Exiting the program");
+        }
+
+    }
+    public static void manageInverseKinematicMenu(ConsoleKeyInfo inputValue){
+         if(inputValue.Key==ConsoleKey.B)
+            currentMenu=MenuState.Firstmenu;
+        else if(inputValue.Key==ConsoleKey.X)
+        {
+            endProgram=true; 
+            Console.WriteLine("Exiting the program");
+        }
+    }
+    public static void manageRobotStatemenu(ConsoleKeyInfo inputValue){
+        Console.WriteLine("hi");
+        if(_serialPort==null ||!_serialPort.IsOpen){
+            Console.WriteLine("Serial port is not openyet!");
+            currentMenu=MenuState.Firstmenu;
+            return;
+        }
+        if(inputValue.Key==ConsoleKey.D1)
+            _serialPort.WriteLine("1");
+        else if(inputValue.Key==ConsoleKey.D2)
+            _serialPort.WriteLine("2");
+        else if(inputValue.Key==ConsoleKey.D3)
+            _serialPort.WriteLine("3");
+        else if(inputValue.Key==ConsoleKey.D4)
+            _serialPort.WriteLine("4");
+        else if(inputValue.Key==ConsoleKey.B)
+            currentMenu=MenuState.Firstmenu;
+        else if(inputValue.Key==ConsoleKey.X)
+        {
+            endProgram=true; 
+            Console.WriteLine("Exiting the program");
+        }
+    }
+
+
     private static void setupSerialPOrt(){
         _serialPort = new SerialPort();
         // Allow the user to set the appropriate properties.
@@ -200,13 +345,6 @@ static MenuState currentMenu=MenuState.Firstmenu;
 
 
     ///
-
-
-    public void manageKinematicMenu(){}
-    public void manageInverseKinematicMenu(){}
-    public void manageKinematicSendCommandsMenu(){}
-    public void manageKinematicSaveCommandsmenu(){}
-    public void manageRobotStatemenu(){}
 
 
 }
