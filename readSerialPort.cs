@@ -81,7 +81,6 @@ public class PortChat
         _serialPort.Close();
         
     }
-
     public static void Read()
     {
         while (_continue)

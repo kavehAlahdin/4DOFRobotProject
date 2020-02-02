@@ -79,7 +79,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
                     manageInverseKinematicMenu( inputValue);
                     break;
                 case MenuState.KinematicSaveCommands:
-                    manageKinematicSaveCommandsmenu( inputValue);
+                    manageKinematicSaveCommandsMenu( inputValue);
                     break;
                 case MenuState.KinematicSendCommands:
                     manageKinematicSendCommandsMenu( inputValue);
@@ -233,23 +233,65 @@ static MenuState currentMenu=MenuState.Firstmenu;
         return delayTime;
     }
     ///
-    public static void manageKinematicSaveCommandsmenu(ConsoleKeyInfo inputValue){
+    public static void manageKinematicSaveCommandsMenu(ConsoleKeyInfo inputValue){
+
         if(inputValue.Key==ConsoleKey.D1)
         {
-            //save one position
             if(_serialPort==null||!_serialPort.IsOpen){
                 currentMenu=MenuState.Kinematic;
                 return;
             }
             if(toSaveFile==null) {
                 Console.WriteLine("The Target file name is not set");
-                return;}
-
+                return;
+            }
+            string message=_serialPort.ReadLine();
+            if (_streamWriter==null)
+                {_streamWriter=new StreamWriter(toSaveFile,true);
+            _streamWriter.WriteLine(message);
+            _streamWriter.Close();
         }
         else if(inputValue.Key==ConsoleKey.D2){
             //save multiple position unless stopped
-            
-
+             //save one position
+            if(_serialPort==null||!_serialPort.IsOpen){
+                currentMenu=MenuState.Kinematic;
+                return;
+            }
+            if(toSaveFile==null) {
+                Console.WriteLine("The Target file name is not set");
+                return;
+            }
+            Thread readThread = new Thread(ReadSerialPort);
+            _streamWriter=new StreamWriter(toSaveFile,true);
+            try
+            {
+                readThread.Start();
+            }
+            catch (System.Exception)
+            {
+                readThread.Join();
+            }
+            _continue = true;
+            Console.Write("Name: ");
+            ConsoleKeyInfo inputKey;
+            String name = Console.ReadLine();
+            Console.WriteLine("Type S to Stop");
+            while (_continue)
+            {
+                inputKey = Console.ReadKey();
+                if (inputValue.Key==ConsoleKey.S)
+                {
+                    _continue = false;
+                }
+                else
+                {
+                    _serialPort.WriteLine(
+                    String.Format("<{0}>: {1}", name, inputKey.ToString()));
+                }
+            }
+            readThread.Join();
+            _streamWriter.Close();
         }
         else if(inputValue.Key==ConsoleKey.D3){
             setFileToSave();
@@ -267,6 +309,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
             Console.WriteLine("Exiting the program");
         }
 
+    }
     }
     static SaveFileDialog saveFileDialog;
     private static void setFileToSave(){
@@ -320,12 +363,9 @@ static MenuState currentMenu=MenuState.Firstmenu;
             Console.WriteLine("Exiting the program");
         }
     }
-
-
     private static void setupSerialPort(){
         _serialPort = new SerialPort();
         //Thread readThread = new Thread(ReadSerialPort);
-
         // Allow the user to set the appropriate properties.
         _serialPort.PortName =SetPortName(_serialPort.PortName);
         _serialPort.BaudRate = SetPortBaudRate(_serialPort.BaudRate);
@@ -333,7 +373,6 @@ static MenuState currentMenu=MenuState.Firstmenu;
         _serialPort.DataBits = SetPortDataBits(_serialPort.DataBits);
         _serialPort.StopBits = SetPortStopBits(_serialPort.StopBits);
         _serialPort.Handshake = SetPortHandshake(_serialPort.Handshake);
-
         // Set the read/write timeouts
         //_serialPort.ReadTimeout = 500;
         //_serialPort.WriteTimeout = 500;
@@ -347,13 +386,11 @@ static MenuState currentMenu=MenuState.Firstmenu;
             Console.WriteLine("Error in openning the serial port");
            // readThread.Join();
             _serialPort.Close();    
-            
         }
-        
-
     } 
     private static void ReadSerialPort()
     {
+        _serialPort.WriteLine("2");
         while (_continue)
         {
             try
@@ -361,16 +398,16 @@ static MenuState currentMenu=MenuState.Firstmenu;
                 string message = _serialPort.ReadLine();
                 if ((message!=null)||(message.Length!=0)){
                     Console.WriteLine(message);
-                    //_streamWriter.WriteLine(message);
+                    _streamWriter.WriteLine(message);
                 }
             }
             catch (TimeoutException) { 
                 Console.WriteLine("Error!");
-                //_streamWriter.Close();
-               // _streamWriter.Dispose();
+                _streamWriter.Close();
+                _streamWriter.Dispose();
             }
         }
-        //_streamWriter.Close();
+        _streamWriter.Close();
     }
    
     // Display Port values and prompt user to enter a port.
@@ -478,7 +515,9 @@ static MenuState currentMenu=MenuState.Firstmenu;
         return (Handshake)Enum.Parse(typeof(Handshake), handshake, true);
     }
 
+    private static void quit(){
 
+    }
 
 
     ///
