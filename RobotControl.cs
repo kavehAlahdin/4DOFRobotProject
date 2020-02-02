@@ -50,7 +50,6 @@ static  Dictionary<MenuState,String> MenuDictionary=new  Dictionary<MenuState,St
     };
 static MenuState currentMenu=MenuState.Firstmenu;
     [STAThread]
-
     public static void Main(string[] args){
         Application.SetCompatibleTextRenderingDefault(false);
         Application.EnableVisualStyles();
@@ -91,11 +90,12 @@ static MenuState currentMenu=MenuState.Firstmenu;
                 Console.WriteLine();
             //Thread.Sleep(100);
         }
+        quit();
     }
 
-    public static void manageFirstmenu(ConsoleKeyInfo inputValue){
-        if(inputValue.Key==ConsoleKey.D1) setupSerialPort(); 
-        else if(inputValue.Key==ConsoleKey.D2)
+    public static void manageFirstmenu(ConsoleKeyInfo inputValueLocal){
+        if(inputValueLocal.Key==ConsoleKey.D1) setupSerialPort(); 
+        else if(inputValueLocal.Key==ConsoleKey.D2)
         {
             if(_serialPort!=null||_serialPort.IsOpen) {
                 _serialPort.Close();
@@ -106,7 +106,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
                 Console.WriteLine("Serial port is already closed!");
             }
         }
-        else if(inputValue.Key==ConsoleKey.D3)
+        else if(inputValueLocal.Key==ConsoleKey.D3)
             if(_serialPort==null ||!_serialPort.IsOpen)
                 Console.WriteLine("The serial port is not open!");
             else
@@ -114,50 +114,48 @@ static MenuState currentMenu=MenuState.Firstmenu;
                 Console.WriteLine("Change to Robot state menu");
                 currentMenu=MenuState.Robotstate;
             }
-        else if (inputValue.Key==ConsoleKey.D4)
+        else if (inputValueLocal.Key==ConsoleKey.D4)
         {
             Console.WriteLine("Change to kinematic menu ");
             currentMenu=MenuState.Kinematic;
         }
-        else if(inputValue.Key==ConsoleKey.D5)
+        else if(inputValueLocal.Key==ConsoleKey.D5)
         {
             currentMenu=MenuState.InversKinematic;
             Console.WriteLine("Change to Inverse kinematic menu");
         }
-        if (inputValue.Key==ConsoleKey.X) 
+        if (inputValueLocal.Key==ConsoleKey.X) 
             {
                 endProgram=true; 
-                Console.WriteLine("Exiting the program");
             }
     }
     
-    public static void manageKinematicMenu(ConsoleKeyInfo inputValue)
+    public static void manageKinematicMenu(ConsoleKeyInfo inputValueLocal)
     {
-        if (inputValue.Key==ConsoleKey.D1)
+        if (inputValueLocal.Key==ConsoleKey.D1)
             currentMenu=MenuState.KinematicSaveCommands;
-        else if(inputValue.Key==ConsoleKey.D2)
+        else if(inputValueLocal.Key==ConsoleKey.D2)
             currentMenu=MenuState.KinematicSendCommands;
-        else if(inputValue.Key==ConsoleKey.B)
+        else if(inputValueLocal.Key==ConsoleKey.B)
             currentMenu=MenuState.Firstmenu;
-        else if(inputValue.Key==ConsoleKey.X)
+        else if(inputValueLocal.Key==ConsoleKey.X)
         {
             endProgram=true; 
-            Console.WriteLine("Exiting the program");
         }
     }
-    public static void manageKinematicSendCommandsMenu(ConsoleKeyInfo inputValue){
+    public static void manageKinematicSendCommandsMenu(ConsoleKeyInfo inputValueLocal){
         if(_serialPort==null ||!_serialPort.IsOpen){
             Console.WriteLine("Serial port is not available!");
             currentMenu=MenuState.Kinematic;
             return;
         }
-        if(inputValue.Key ==ConsoleKey.D1){
+        if(inputValueLocal.Key ==ConsoleKey.D1){
             //send one command
             Console.WriteLine("Please enter the robot position:[expects 4 number seperated with \",\"] ");
             String enteredPosition=Console.ReadLine();
             _serialPort.WriteLine (enteredPosition);           
         }
-        else if (inputValue.Key==ConsoleKey.D2)
+        else if (inputValueLocal.Key==ConsoleKey.D2)
         {
             //send multiple from a file
             if(_serialPort==null ||!_serialPort.IsOpen){
@@ -180,21 +178,21 @@ static MenuState currentMenu=MenuState.Firstmenu;
                 Thread.Sleep(delayTime);  
             }
         }
-        else if (inputValue.Key==ConsoleKey.D3)
+        else if (inputValueLocal.Key==ConsoleKey.D3)
         {
                //Load a file
+               Console.WriteLine("OpenFile");
                openFile();
         }
-        if (inputValue.Key==ConsoleKey.S)
+        if (inputValueLocal.Key==ConsoleKey.S)
         {
             //stop the file playing
         }
-         if(inputValue.Key==ConsoleKey.B)
+         if(inputValueLocal.Key==ConsoleKey.B)
             currentMenu=MenuState.Kinematic;
-        else if(inputValue.Key==ConsoleKey.X)
+        else if(inputValueLocal.Key==ConsoleKey.X)
         {
             endProgram=true; 
-            Console.WriteLine("Exiting the program");
         }
 
     }
@@ -233,31 +231,30 @@ static MenuState currentMenu=MenuState.Firstmenu;
         return delayTime;
     }
     ///
-    public static void manageKinematicSaveCommandsMenu(ConsoleKeyInfo inputValue){
-
-        if(inputValue.Key==ConsoleKey.D1)
+    public static void manageKinematicSaveCommandsMenu(ConsoleKeyInfo inputValueLocal){
+        Console.WriteLine("manageKinematicSaveCommandsMenu");
+        if(_serialPort==null||!_serialPort.IsOpen){
+            Console.WriteLine("Serial port not available");
+            currentMenu=MenuState.Kinematic;
+            return;
+        }
+        if(inputValueLocal.Key==ConsoleKey.D1)
         {
-            if(_serialPort==null||!_serialPort.IsOpen){
-                currentMenu=MenuState.Kinematic;
-                return;
-            }
             if(toSaveFile==null) {
                 Console.WriteLine("The Target file name is not set");
                 return;
             }
             string message=_serialPort.ReadLine();
             if (_streamWriter==null)
+            {
+                Console.WriteLine("Stream generated!");
                 {_streamWriter=new StreamWriter(toSaveFile,true);
+            }
             _streamWriter.WriteLine(message);
             _streamWriter.Close();
         }
-        else if(inputValue.Key==ConsoleKey.D2){
+        else if(inputValueLocal.Key==ConsoleKey.D2){
             //save multiple position unless stopped
-             //save one position
-            if(_serialPort==null||!_serialPort.IsOpen){
-                currentMenu=MenuState.Kinematic;
-                return;
-            }
             if(toSaveFile==null) {
                 Console.WriteLine("The Target file name is not set");
                 return;
@@ -280,7 +277,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
             while (_continue)
             {
                 inputKey = Console.ReadKey();
-                if (inputValue.Key==ConsoleKey.S)
+                if (inputValueLocal.Key==ConsoleKey.S)
                 {
                     _continue = false;
                 }
@@ -293,74 +290,72 @@ static MenuState currentMenu=MenuState.Firstmenu;
             readThread.Join();
             _streamWriter.Close();
         }
-        else if(inputValue.Key==ConsoleKey.D3){
+        else if(inputValueLocal.Key==ConsoleKey.D3){
             setFileToSave();
             //set the file name to save
         }
-        if (inputValue.Key==ConsoleKey.S)
+        else if (inputValueLocal.Key==ConsoleKey.S)
         {
             //stop the file playing
         }
-         if(inputValue.Key==ConsoleKey.B)
+         else if(inputValueLocal.Key==ConsoleKey.B)
             currentMenu=MenuState.Kinematic;
-        else if(inputValue.Key==ConsoleKey.X)
+        else if(inputValueLocal.Key==ConsoleKey.X)
         {
             endProgram=true; 
-            Console.WriteLine("Exiting the program");
         }
 
-    }
+    }   
     }
     static SaveFileDialog saveFileDialog;
     private static void setFileToSave(){
-            using (saveFileDialog = new SaveFileDialog())
+        Console.WriteLine("saveDialog");
+        using (saveFileDialog = new SaveFileDialog())
+        {
+            saveFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*"  ;
+            saveFileDialog.FilterIndex = 2 ;
+            saveFileDialog.RestoreDirectory = true ;
+            saveFileDialog.Title="save file";
+            DialogResult dResult= saveFileDialog.ShowDialog();
+            if (dResult== DialogResult.OK)
             {
-                saveFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*"  ;
-                saveFileDialog.FilterIndex = 2 ;
-                saveFileDialog.RestoreDirectory = true ;
-                saveFileDialog.Title="save file";
-                DialogResult dResult= saveFileDialog.ShowDialog();
-                if (dResult== DialogResult.OK)
-                {
-                    //Get the path of specified file
-                    toSaveFile = saveFileDialog.FileName;
-                    //Read the contents of the file into a stream
-                    Console.WriteLine("The File "+ toSaveFile + " will be appended!");                   
-                }else{
-                    Console.WriteLine("No File was set!");
-                }
+                //Get the path of specified file
+                toSaveFile = saveFileDialog.FileName;
+                //Read the contents of the file into a stream
+                Console.WriteLine("The File "+ toSaveFile + " will be appended!");                   
+            }else{
+                Console.WriteLine("No File was set!");
             }
         }
+    }
     
-    public static void manageInverseKinematicMenu(ConsoleKeyInfo inputValue){
-         if(inputValue.Key==ConsoleKey.B)
+    public static void manageInverseKinematicMenu(ConsoleKeyInfo inputValueLocal){
+         if(inputValueLocal.Key==ConsoleKey.B)
             currentMenu=MenuState.Firstmenu;
-        else if(inputValue.Key==ConsoleKey.X)
+        else if(inputValueLocal.Key==ConsoleKey.X)
         {
             endProgram=true; 
-            Console.WriteLine("Exiting the program");
         }
     }
-    public static void manageRobotStatemenu(ConsoleKeyInfo inputValue){
+    public static void manageRobotStatemenu(ConsoleKeyInfo inputValueLocal){
         if(_serialPort==null ||!_serialPort.IsOpen){
             Console.WriteLine("Serial port is not openyet!");
             currentMenu=MenuState.Firstmenu;
             return;
         }
-        if(inputValue.Key==ConsoleKey.D1)
+        if(inputValueLocal.Key==ConsoleKey.D1)
             _serialPort.WriteLine("1");
-        else if(inputValue.Key==ConsoleKey.D2)
+        else if(inputValueLocal.Key==ConsoleKey.D2)
             _serialPort.WriteLine("2");
-        else if(inputValue.Key==ConsoleKey.D3)
+        else if(inputValueLocal.Key==ConsoleKey.D3)
             _serialPort.WriteLine("3");
-        else if(inputValue.Key==ConsoleKey.D4)
+        else if(inputValueLocal.Key==ConsoleKey.D4)
             _serialPort.WriteLine("4");
-        else if(inputValue.Key==ConsoleKey.B)
+        else if(inputValueLocal.Key==ConsoleKey.B)
             currentMenu=MenuState.Firstmenu;
-        else if(inputValue.Key==ConsoleKey.X)
+        else if(inputValueLocal.Key==ConsoleKey.X)
         {
             endProgram=true; 
-            Console.WriteLine("Exiting the program");
         }
     }
     private static void setupSerialPort(){
@@ -516,6 +511,17 @@ static MenuState currentMenu=MenuState.Firstmenu;
     }
 
     private static void quit(){
+        Console.WriteLine("Exiting the program");
+        if(_serialPort!=null)
+            {_serialPort.Close();
+            _serialPort.Dispose();
+            }
+            if(_streamWriter!=null)
+            {
+        _streamWriter.Close();
+        _streamWriter.Dispose();
+            }
+
 
     }
 

@@ -90,7 +90,8 @@ public class PortChat
                 string message = _serialPort.ReadLine();
                 if ((message!=null)||(message.Length!=0)){
                     Console.WriteLine(message);
-                    _streamWriter.WriteLine(message);
+                    if(message!=null||message.Length>=2)
+                        _streamWriter.WriteLine(message);
                 }
             }
             catch (TimeoutException) { 
