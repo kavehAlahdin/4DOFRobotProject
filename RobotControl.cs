@@ -3,11 +3,18 @@ using System.IO.Ports;
 using System.Threading;
 using System.IO;
 using System.Collections.Generic;
+using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Drawing;
 public class RobotControl{
 static bool  endProgram=false;
 static bool _continue;
     static SerialPort _serialPort;
     static StreamWriter _streamWriter;
+         const int defaultDelayTime=100;
+
+    static string toSendFile;
+    static string toSaveFile;
  enum MenuState{Firstmenu=1,Kinematic=2,KinematicSendCommands=21,KinematicSaveCommands=22,InversKinematic=3,Robotstate=4};
 static  Dictionary<MenuState,String> MenuDictionary=new  Dictionary<MenuState,String>{
     {MenuState.Firstmenu,@"Menu: 
@@ -33,14 +40,20 @@ static  Dictionary<MenuState,String> MenuDictionary=new  Dictionary<MenuState,St
     {MenuState.KinematicSaveCommands,@"Kinematic - Save:
             (1) Save One Position
             (2) Save Until stopped
+            (3) Set the File name
             (b) Back (s) Stop (x) Exit"},
     {MenuState.KinematicSendCommands,@"Kinematic - Send:
             (1) Send One Command
             (2) Send multiple from file
+            (3) Load a new File
             (b) Back    (s) Stop    (x) Exit"}
     };
 static MenuState currentMenu=MenuState.Firstmenu;
+    [STAThread]
+
     public static void Main(string[] args){
+        Application.SetCompatibleTextRenderingDefault(false);
+        Application.EnableVisualStyles();
         Console.WriteLine("Control 4DoF Robot through serial port");
         for (int i = 0; i < 50; i++)
             Console.Write("-");
@@ -81,7 +94,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
     }
 
     public static void manageFirstmenu(ConsoleKeyInfo inputValue){
-        if(inputValue.Key==ConsoleKey.D1) setupSerialPOrt(); 
+        if(inputValue.Key==ConsoleKey.D1) setupSerialPort(); 
         else if(inputValue.Key==ConsoleKey.D2)
         {
             if(_serialPort!=null||_serialPort.IsOpen) {
@@ -133,7 +146,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
         }
     }
     public static void manageKinematicSendCommandsMenu(ConsoleKeyInfo inputValue){
-        if(_serialPort==null ||_serialPort.IsOpen){
+        if(_serialPort==null ||!_serialPort.IsOpen){
             Console.WriteLine("Serial port is not available!");
             currentMenu=MenuState.Kinematic;
             return;
@@ -147,7 +160,30 @@ static MenuState currentMenu=MenuState.Firstmenu;
         else if (inputValue.Key==ConsoleKey.D2)
         {
             //send multiple from a file
-            
+            if(_serialPort==null ||!_serialPort.IsOpen){
+                Console.WriteLine("Serial port is not available!");
+                currentMenu=MenuState.Kinematic;
+                return;
+            }
+             if (toSendFile==null||toSendFile.Length==0)
+            {
+                Console.WriteLine("No Files are loaded!");
+                return;
+            }
+            int delayTime=SetDelayinMillis("Set the delay between command lines in millisecond");
+            //Loop through al files
+            string[] data=File.ReadAllLines(toSendFile);
+            foreach (var item in data)
+            {
+                _serialPort.WriteLine(item);
+                Console.WriteLine(item);
+                Thread.Sleep(delayTime);  
+            }
+        }
+        else if (inputValue.Key==ConsoleKey.D3)
+        {
+               //Load a file
+               openFile();
         }
         if (inputValue.Key==ConsoleKey.S)
         {
@@ -162,13 +198,62 @@ static MenuState currentMenu=MenuState.Firstmenu;
         }
 
     }
+    static OpenFileDialog openFileDialog;
+    private static void openFile(){
+            using (openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.InitialDirectory =@"C:\Users\admin\Documents\Arduino\RobotArm\071-Robot-Arm-Kit-Potentiometers";// "c:\\";
+                openFileDialog.Filter ="txt files (*.txt)|*.txt|All files (*.*)|*.*";  
+                openFileDialog.FilterIndex = 2;  
+                openFileDialog.CheckFileExists = true;  
+                openFileDialog.CheckPathExists = true;  
+                openFileDialog.RestoreDirectory = true;
+                openFileDialog.Multiselect=false;
+                openFileDialog.Title="Select the file";
+                
+                DialogResult dResult= openFileDialog.ShowDialog();
+                if (dResult== DialogResult.OK)
+                {
+                    //Get the path of specified file
+                    toSendFile = openFileDialog.FileName;
+                    //Read the contents of the file into a stream
+                    Console.WriteLine("File "+ toSendFile + " is opened!");                   
+                }else{
+                    Console.WriteLine("No File was opened!");
+                }
+            }
+    }
+    private static  int  SetDelayinMillis(String message){
+        int delayTime;
+        Console.Write(message+ " (Default:{0})",defaultDelayTime);
+        bool validEntry=Int32.TryParse( Console.ReadLine(),out delayTime);
+        if(!validEntry)
+            Console.WriteLine("There was an error with the input time.");
+        Console.WriteLine("The {0} millisecond will be used",defaultDelayTime);            
+        return delayTime;
+    }
+    ///
     public static void manageKinematicSaveCommandsmenu(ConsoleKeyInfo inputValue){
         if(inputValue.Key==ConsoleKey.D1)
         {
+            //save one position
+            if(_serialPort==null||!_serialPort.IsOpen){
+                currentMenu=MenuState.Kinematic;
+                return;
+            }
+            if(toSaveFile==null) {
+                Console.WriteLine("The Target file name is not set");
+                return;}
 
         }
         else if(inputValue.Key==ConsoleKey.D2){
+            //save multiple position unless stopped
+            
 
+        }
+        else if(inputValue.Key==ConsoleKey.D3){
+            setFileToSave();
+            //set the file name to save
         }
         if (inputValue.Key==ConsoleKey.S)
         {
@@ -183,6 +268,27 @@ static MenuState currentMenu=MenuState.Firstmenu;
         }
 
     }
+    static SaveFileDialog saveFileDialog;
+    private static void setFileToSave(){
+            using (saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Filter = "txt files (*.txt)|*.txt|All files (*.*)|*.*"  ;
+                saveFileDialog.FilterIndex = 2 ;
+                saveFileDialog.RestoreDirectory = true ;
+                saveFileDialog.Title="save file";
+                DialogResult dResult= saveFileDialog.ShowDialog();
+                if (dResult== DialogResult.OK)
+                {
+                    //Get the path of specified file
+                    toSaveFile = saveFileDialog.FileName;
+                    //Read the contents of the file into a stream
+                    Console.WriteLine("The File "+ toSaveFile + " will be appended!");                   
+                }else{
+                    Console.WriteLine("No File was set!");
+                }
+            }
+        }
+    
     public static void manageInverseKinematicMenu(ConsoleKeyInfo inputValue){
          if(inputValue.Key==ConsoleKey.B)
             currentMenu=MenuState.Firstmenu;
@@ -216,9 +322,9 @@ static MenuState currentMenu=MenuState.Firstmenu;
     }
 
 
-    private static void setupSerialPOrt(){
+    private static void setupSerialPort(){
         _serialPort = new SerialPort();
-        Thread readThread = new Thread(ReadSerialPort);
+        //Thread readThread = new Thread(ReadSerialPort);
 
         // Allow the user to set the appropriate properties.
         _serialPort.PortName =SetPortName(_serialPort.PortName);
@@ -255,16 +361,16 @@ static MenuState currentMenu=MenuState.Firstmenu;
                 string message = _serialPort.ReadLine();
                 if ((message!=null)||(message.Length!=0)){
                     Console.WriteLine(message);
-                    _streamWriter.WriteLine(message);
+                    //_streamWriter.WriteLine(message);
                 }
             }
             catch (TimeoutException) { 
                 Console.WriteLine("Error!");
-                _streamWriter.Close();
-                _streamWriter.Dispose();
+                //_streamWriter.Close();
+               // _streamWriter.Dispose();
             }
         }
-        _streamWriter.Close();
+        //_streamWriter.Close();
     }
    
     // Display Port values and prompt user to enter a port.
