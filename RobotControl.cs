@@ -42,7 +42,7 @@ static  Dictionary<MenuState,String> MenuDictionary=new  Dictionary<MenuState,St
 static MenuState currentMenu=MenuState.Firstmenu;
     public static void Main(string[] args){
         Console.WriteLine("Control 4DoF Robot through serial port");
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 50; i++)
             Console.Write("-");
         Console.WriteLine();
         String menuMessage;
@@ -73,7 +73,10 @@ static MenuState currentMenu=MenuState.Firstmenu;
                     break;
                 
             }
-            Thread.Sleep(100);
+            for (int i = 0; i < 50; i++)
+                Console.Write("-");
+                Console.WriteLine();
+            //Thread.Sleep(100);
         }
     }
 
@@ -81,7 +84,7 @@ static MenuState currentMenu=MenuState.Firstmenu;
         if(inputValue.Key==ConsoleKey.D1) setupSerialPOrt(); 
         else if(inputValue.Key==ConsoleKey.D2)
         {
-            if(_serialPort.IsOpen) {
+            if(_serialPort!=null||_serialPort.IsOpen) {
                 _serialPort.Close();
                 Console.WriteLine("serial port is closed");
             }
@@ -115,8 +118,8 @@ static MenuState currentMenu=MenuState.Firstmenu;
             }
     }
     
-    public static void manageKinematicMenu(ConsoleKeyInfo inputValue){
-
+    public static void manageKinematicMenu(ConsoleKeyInfo inputValue)
+    {
         if (inputValue.Key==ConsoleKey.D1)
             currentMenu=MenuState.KinematicSaveCommands;
         else if(inputValue.Key==ConsoleKey.D2)
@@ -137,7 +140,9 @@ static MenuState currentMenu=MenuState.Firstmenu;
         }
         if(inputValue.Key ==ConsoleKey.D1){
             //send one command
-            
+            Console.WriteLine("Please enter the robot position:[expects 4 number seperated with \",\"] ");
+            String enteredPosition=Console.ReadLine();
+            _serialPort.WriteLine (enteredPosition);           
         }
         else if (inputValue.Key==ConsoleKey.D2)
         {
@@ -188,7 +193,6 @@ static MenuState currentMenu=MenuState.Firstmenu;
         }
     }
     public static void manageRobotStatemenu(ConsoleKeyInfo inputValue){
-        Console.WriteLine("hi");
         if(_serialPort==null ||!_serialPort.IsOpen){
             Console.WriteLine("Serial port is not openyet!");
             currentMenu=MenuState.Firstmenu;
@@ -214,6 +218,8 @@ static MenuState currentMenu=MenuState.Firstmenu;
 
     private static void setupSerialPOrt(){
         _serialPort = new SerialPort();
+        Thread readThread = new Thread(ReadSerialPort);
+
         // Allow the user to set the appropriate properties.
         _serialPort.PortName =SetPortName(_serialPort.PortName);
         _serialPort.BaudRate = SetPortBaudRate(_serialPort.BaudRate);
@@ -225,8 +231,42 @@ static MenuState currentMenu=MenuState.Firstmenu;
         // Set the read/write timeouts
         //_serialPort.ReadTimeout = 500;
         //_serialPort.WriteTimeout = 500;
+        try
+        {
+            _serialPort.Open();
+         //   readThread.Start();
+        }
+        catch (System.Exception)
+        {
+            Console.WriteLine("Error in openning the serial port");
+           // readThread.Join();
+            _serialPort.Close();    
+            
+        }
+        
 
-    }    
+    } 
+    private static void ReadSerialPort()
+    {
+        while (_continue)
+        {
+            try
+            {
+                string message = _serialPort.ReadLine();
+                if ((message!=null)||(message.Length!=0)){
+                    Console.WriteLine(message);
+                    _streamWriter.WriteLine(message);
+                }
+            }
+            catch (TimeoutException) { 
+                Console.WriteLine("Error!");
+                _streamWriter.Close();
+                _streamWriter.Dispose();
+            }
+        }
+        _streamWriter.Close();
+    }
+   
     // Display Port values and prompt user to enter a port.
     private static string SetPortName(string defaultPortName)
     {
@@ -236,10 +276,8 @@ static MenuState currentMenu=MenuState.Firstmenu;
         {
             Console.WriteLine("   {0}", s);
         }
-
         Console.Write("Enter COM port value (Default: {0}): ", defaultPortName);
         portName = Console.ReadLine();
-
         if (portName == "" || !(portName.ToLower()).StartsWith("com"))
         {
             portName = defaultPortName;
@@ -253,34 +291,27 @@ static MenuState currentMenu=MenuState.Firstmenu;
 
         Console.Write("Baud Rate(default:{0}): ", defaultPortBaudRate);
         baudRate = Console.ReadLine();
-
         if (baudRate == "")
         {
             baudRate = defaultPortBaudRate.ToString();
         }
-
         return int.Parse(baudRate);
     }
-
     // Display PortParity values and prompt user to enter a value.
     private static Parity SetPortParity(Parity defaultPortParity)
     {
         string parity;
-
         Console.WriteLine("Available Parity options:");
         foreach (string s in Enum.GetNames(typeof(Parity)))
         {
             Console.WriteLine("   {0}", s);
         }
-
         Console.Write("Enter Parity value (Default: {0}):", defaultPortParity.ToString(), true);
         parity = Console.ReadLine();
-
         if (parity == "")
         {
             parity = defaultPortParity.ToString();
         }
-
         return (Parity)Enum.Parse(typeof(Parity), parity, true);
     }
     // Display DataBits values and prompt user to enter a value.
